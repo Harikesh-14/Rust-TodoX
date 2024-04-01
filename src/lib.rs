@@ -1,4 +1,7 @@
+mod conn;
+
 use std::error::Error;
+use rusqlite::Connection;
 
 pub struct Config {
     operation: String,
@@ -18,9 +21,23 @@ impl Config {
 }
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
+    let conn = Connection::open("user.db")?;
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS task (
+            id INTEGER PRIMARY KEY,
+            task_name TEXT NOT NULL,
+            date_added TEXT DEFAULT CURRENT_TIMESTAMP
+        )",
+        (),
+    )?;
+
     match config.operation.as_str() {
         "add" => {
+            conn::insert_task(&conn, &config.tasks)?;
+        }
 
+        "show" => {
+            conn::display_tasks(&conn)?;
         }
 
         _ => {
