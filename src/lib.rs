@@ -1,11 +1,11 @@
 mod conn;
 
 use std::error::Error;
+use std::io;
 use rusqlite::Connection;
 
 pub struct Config {
     operation: String,
-    tasks: String,
 }
 
 impl Config {
@@ -14,9 +14,8 @@ impl Config {
             println!("Use at least 2 arguments")
         }
         let operation = args[1].clone();
-        let tasks = args.get(2).cloned().unwrap_or_else(|| String::from("None"));
 
-        Ok(Config { operation, tasks })
+        Ok(Config { operation })
     }
 }
 
@@ -26,20 +25,43 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         "CREATE TABLE IF NOT EXISTS task (
             id INTEGER PRIMARY KEY,
             task_name TEXT NOT NULL,
-            date_added TEXT DEFAULT CURRENT_TIMESTAMP
+            date_added TEXT
         )",
         (),
     )?;
 
     match config.operation.as_str() {
         "add" => {
-            conn::insert_task(&conn, &config.tasks)?;
-        }
+            let mut task_name = String::new();
+            println!("Enter the task name: ");
+            io::stdin()
+                .read_line(&mut task_name)
+                .expect("Expected an input");
+            let task_name = task_name.trim();
 
+            if conn::is_present(&conn, &task_name) == false {
+                conn::insert_task(&conn, &task_name)?;
+            } else {
+                eprintln!("This task already exist.");
+            }
+        }
+        "delete" => {
+            let mut task_name = String::new();
+            println!("Enter the task name: ");
+            io::stdin()
+                .read_line(&mut task_name)
+                .expect("Expected an input");
+            let task_name = task_name.trim();
+
+            if conn::is_present(&conn, &task_name) {
+                conn::delete_task(&conn, &task_name)?;
+            } else {
+                eprintln!("The task is not present in the todo.")
+            }
+        }
         "show" => {
             conn::display_tasks(&conn)?;
         }
-
         _ => {
             println!("Invalid Operations");
         }
