@@ -5,7 +5,8 @@ use std::io;
 use rusqlite::Connection;
 
 pub struct Config {
-    operation: String,
+    pub operation: String,
+    pub task_id: String,
 }
 
 impl Config {
@@ -14,8 +15,9 @@ impl Config {
             println!("Use at least 2 arguments")
         }
         let operation = args[1].clone();
+        let task_id = args.get(2).cloned().unwrap_or_else(|| String::from("None"));
 
-        Ok(Config { operation })
+        Ok(Config { operation, task_id })
     }
 }
 
@@ -39,24 +41,22 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
                 .expect("Expected an input");
             let task_name = task_name.trim();
 
-            if conn::is_present(&conn, &task_name) == false {
+            if conn::is_present_name(&conn, &task_name) == false {
                 conn::insert_task(&conn, &task_name)?;
+                println!("Task added");
             } else {
                 eprintln!("This task already exist.");
             }
         }
-        "delete" => {
-            let mut task_name = String::new();
-            println!("Enter the task name: ");
-            io::stdin()
-                .read_line(&mut task_name)
-                .expect("Expected an input");
-            let task_name = task_name.trim();
+        "done" => {
+            let task_id = config.task_id;
+            let task_id: i32 = task_id.trim().parse().expect("Please enter a valid task ID");
 
-            if conn::is_present(&conn, &task_name) {
-                conn::delete_task(&conn, &task_name)?;
+            if conn::is_present(&conn, task_id) {
+                conn::delete_task(&conn, task_id)?;
+                println!("Task mark as done");
             } else {
-                eprintln!("The task is not present in the todo.")
+                eprintln!("Task with ID {} not found.", task_id);
             }
         }
         "show" => {

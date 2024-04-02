@@ -9,7 +9,19 @@ pub struct Person {
     date_added: String,
 }
 
-pub fn is_present(conn: &Connection, task_name: &str) -> bool {
+pub fn is_present(conn: &Connection, task_id: i32) -> bool {
+    let mut stmt = conn.prepare("SELECT * FROM task WHERE id = ?").expect("Error preparing statement");
+    let task_iter = stmt.query_map(&[&task_id], |_| Ok(()))
+        .expect("Error querying tasks");
+
+    for _ in task_iter {
+        return true;
+    }
+
+    false
+}
+
+pub fn is_present_name(conn: &Connection, task_name: &str) -> bool {
     let mut stmt = conn.prepare("SELECT * FROM task WHERE task_name = ?").expect("Error preparing statement");
     let task_iter = stmt.query_map(&[&task_name], |row| {
         Ok(Person {
@@ -54,10 +66,11 @@ pub fn display_tasks(conn: &Connection) -> Result<()> {
     for t in task_iter {
         match t {
             Ok(task) => {
+                let curr_id = task.id;
                 let curr_task = task.task_name;
                 let curr_date = task.date_added;
 
-                println!("[-] {} --> {}", curr_task, curr_date);
+                println!("[{}]. {} --> ({})", curr_id ,curr_task, curr_date);
             }
 
             Err(err) => {
@@ -69,7 +82,11 @@ pub fn display_tasks(conn: &Connection) -> Result<()> {
     Ok(())
 }
 
-pub fn delete_task(conn: &Connection, task_name: &str) -> Result<()> {
-    conn.execute("DELETE FROM task WHERE task_name = ?", &[task_name])?;
+pub fn delete_task(conn: &Connection, task_id: i32) -> Result<()> {
+    conn.execute("DELETE FROM task WHERE id = ?", [task_id])?;
+
+    // After deleting the task, update the IDs of remaining tasks
+    conn.execute("UPDATE task SET id = id - 1 WHERE id > ?", [task_id])?;
+
     Ok(())
 }
