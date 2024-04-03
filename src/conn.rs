@@ -90,3 +90,8 @@ pub fn delete_task(conn: &Connection, task_id: i32) -> Result<()> {
 
     Ok(())
 }
+
+pub fn update_task_name(conn: &Connection, task_id: i32, new_task_name: &str) -> Result<(), Error> {
+    conn.execute("UPDATE task SET task_name = ? WHERE id = ?", &[new_task_name, &task_id.to_string()])?;
+    Ok(())
+}

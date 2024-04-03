@@ -62,6 +62,24 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         "show" => {
             conn::display_tasks(&conn)?;
         }
+        "edit" => {
+            let task_id = config.task_id;
+            let task_id: i32 = task_id.trim().parse().expect("Please enter a valid task ID");
+
+            let mut new_task_name = String::new();
+            println!("Enter the new task name: ");
+            io::stdin()
+                .read_line(&mut new_task_name)
+                .expect("Expected an input");
+            let new_task_name = new_task_name.trim();
+
+            if conn::is_present(&conn, task_id) {
+                conn::update_task_name(&conn, task_id, new_task_name)?;
+                println!("Task name updated");
+            } else {
+                eprintln!("Task with ID {} not found.", task_id);
+            }
+        }
         _ => {
             println!("Invalid Operations");
         }
