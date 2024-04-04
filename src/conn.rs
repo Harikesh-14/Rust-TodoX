@@ -1,5 +1,5 @@
 use rusqlite::{Connection, Error, Result};
-use chrono::Local;
+use chrono::{Local, Datelike};
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -94,4 +94,16 @@ pub fn delete_task(conn: &Connection, task_id: i32) -> Result<()> {
 pub fn update_task_name(conn: &Connection, task_id: i32, new_task_name: &str) -> Result<(), Error> {
     conn.execute("UPDATE task SET task_name = ? WHERE id = ?", &[new_task_name, &task_id.to_string()])?;
     Ok(())
+}
+
+pub fn clear_table(conn: &Connection) -> Result<(), Error> {
+    conn.execute("DELETE FROM task", [])?;
+    Ok(())
+}
+
+pub fn is_table_empty(conn: &Connection) -> Result<bool, Error> {
+    let mut stmt = conn.prepare("SELECT COUNT(*) FROM task")?;
+    let count: i32 = stmt.query_row([], |row| row.get(0))?;
+
+    Ok(count == 0)
 }
