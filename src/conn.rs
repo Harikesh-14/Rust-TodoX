@@ -1,5 +1,5 @@
 use rusqlite::{Connection, Error, Result};
-use chrono::{Local, Datelike};
+use chrono::{Local, Datelike, Timelike};
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -44,7 +44,33 @@ pub fn is_present_name(conn: &Connection, task_name: &str) -> bool {
 
 pub fn insert_task(conn: &Connection, task_name: &str) -> Result<(), Error> {
     let curr_date = Local::now();
-    let formatted_date = curr_date.format("%d-%m-%Y %H-%M-%S").to_string();
+    let formatted_date = format!(
+        "{:02} {} {} - {:02}:{:02} {}",
+        curr_date.day(),
+        match curr_date.month() {
+            1 => "Jan",
+            2 => "Feb",
+            3 => "Mar",
+            4 => "Apr",
+            5 => "May",
+            6 => "Jun",
+            7 => "Jul",
+            8 => "Aug",
+            9 => "Sept",
+            10 => "Oct",
+            11 => "Nov",
+            12 => "Dec",
+            _ => panic!("Invalid Date"),
+        },
+        curr_date.year(),
+        curr_date.hour() % 12,
+        curr_date.minute(),
+        if curr_date.hour() < 12 {
+            "AM"
+        } else {
+            "PM"
+        }
+    );
 
     conn.execute(
         "INSERT INTO task (task_name, date_added) VALUES (?, ?)",
